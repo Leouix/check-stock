@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CheckStock{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="brand-mark">CS</span>
+    <span>
+      <strong>CheckStock</strong>
+      <small>остатки фулфилмента</small>
+    </span>
+  </a>
+  <nav>
+    <a href="/" class="{{ 'active' if page == 'stock' }}">Остатки</a>
+    <a href="/orders" class="{{ 'active' if page == 'orders' }}">Отправки</a>
+    <a href="/warehouses" class="{{ 'active' if page == 'warehouses' }}">Склады</a>
+    <a href="/history" class="{{ 'active' if page == 'history' }}">История</a>
+  </nav>
+</header>
+
+<main>
+  {% set msg = request.query_params.get('msg') %}
+  {% if msg %}
+    <div class="flash {{ 'flash-error' if request.query_params.get('level') == 'error' else 'flash-ok' }}">
+      {{ msg }}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer>
+  CheckStock · тестовое задание · остатки считаются из журнала движений
+</footer>
+</body>
+</html>

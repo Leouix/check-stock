@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Отправки · CheckStock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Отправки</h1>
+    <p class="muted">FBS резервирует товар на складе до отправки. FBO уходит на маркетплейс и висит в пути до приёмки.</p>
+  </div>
+</div>
+
+<section class="split split-2">
+  <div class="card">
+    <div class="card-head"><h2>Резерв FBS</h2><span class="muted">клиентский заказ</span></div>
+    <form method="post" action="/orders/fbs" class="form-stack">
+      <input type="hidden" name="idem" value="{{ idem }}">
+      <label>Артикул
+        <select name="sku_id" required>
+          {% for product in products %}<option value="{{ product.id }}">{{ product.sku }} · {{ product.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Склад
+        <select name="ff_id" required>
+          {% for ff in ffs %}<option value="{{ ff.id }}">{{ ff.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="form-row">
+        <label>Количество <input type="number" name="qty" min="1" value="1" required></label>
+        <button type="submit" class="grow">Зарезервировать</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Отправка FBO</h2><span class="muted">на склад маркетплейса</span></div>
+    <form method="post" action="/orders/fbo" class="form-stack">
+      <input type="hidden" name="idem" value="{{ idem }}">
+      <label>Артикул
+        <select name="sku_id" required>
+          {% for product in products %}<option value="{{ product.id }}">{{ product.sku }} · {{ product.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Склад
+        <select name="ff_id" required>
+          {% for ff in ffs %}<option value="{{ ff.id }}">{{ ff.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="form-row">
+        <label>Количество <input type="number" name="qty" min="1" value="1" required></label>
+        <button type="submit" class="grow">Отправить</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>FBS · клиентские отправки</h2><span class="muted">резерв → отправка → у клиента</span></div>
+  <div class="table-wrap">
+    <table class="simple">
+      <thead><tr><th>№</th><th>Товар</th><th>Склад</th><th class="num">Кол-во</th><th>Статус</th><th class="actions-col">Действия</th></tr></thead>
+      <tbody>
+      {% for order in fbs %}
+        <tr>
+          <td><strong>{{ order.number }}</strong></td>
+          <td><strong>{{ order.sku }}</strong> <span class="muted">{{ order.name }}</span></td>
+          <td>{{ order.ff }}</td>
+          <td class="num">{{ order.qty }}</td>
+          <td>
+            {% if order.status == 'RESERVED' %}<span class="badge badge-amber">в резерве</span>
+            {% elif order.status == 'SHIPPED' %}<span class="badge badge-violet">у клиента</span>
+            {% else %}<span class="badge badge-grey">отменён</span>{% endif %}
+          </td>
+          <td class="actions">
+            {% if order.status == 'RESERVED' %}
+              <form method="post" action="/orders/fbs/{{ order.id }}/ship"><button class="small">Отправить</button></form>
+              <form method="post" action="/orders/fbs/{{ order.id }}/cancel"><button class="small ghost">Отменить</button></form>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Пока нет FBS-отправок</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>FBO · отправки на маркетплейс</h2><span class="muted">отправка → в пути → принято на складе МП</span></div>
+  <div class="table-wrap">
+    <table class="simple">
+      <thead><tr><th>№</th><th>Товар</th><th>Склад</th><th class="num">Кол-во</th><th>Статус</th><th class="actions-col">Действия</th></tr></thead>
+      <tbody>
+      {% for order in fbo %}
+        <tr>
+          <td><strong>{{ order.number }}</strong></td>
+          <td><strong>{{ order.sku }}</strong> <span class="muted">{{ order.name }}</span></td>
+          <td>{{ order.ff }}</td>
+          <td class="num">{{ order.qty }}</td>
+          <td>
+            {% if order.status == 'SHIPPED' %}<span class="badge badge-blue">в пути</span>
+            {% elif order.status == 'RECEIVED' %}<span class="badge badge-green">принято на МП</span>
+            {% else %}<span class="badge badge-grey">{{ order.status_label }}</span>{% endif %}
+          </td>
+          <td class="actions">
+            {% if order.status == 'SHIPPED' %}
+              <form method="post" action="/orders/fbo/{{ order.id }}/receive"><button class="small">Принять на МП</button></form>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Пока нет FBO-отправок</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

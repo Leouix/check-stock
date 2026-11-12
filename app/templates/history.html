@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}История · CheckStock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>История операций</h1>
+    <p class="muted">Каждое действие — строка журнала: что, сколько, откуда и куда. Записи не редактируются.</p>
+  </div>
+  <a class="button ghost" href="/api/reconcile" target="_blank">Проверить сходимость</a>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="simple history">
+      <thead><tr><th>Когда</th><th>Операция</th><th>Что произошло</th><th>Движение</th><th>Комментарий</th></tr></thead>
+      <tbody>
+      {% for op in operations %}
+        <tr>
+          <td class="nowrap muted">{{ op.created_at | dt }}</td>
+          <td><span class="badge badge-grey">{{ op.label }}</span></td>
+          <td>{{ op.description }}</td>
+          <td class="movements">
+            {% for entry in op.entries %}
+              <span class="chip {{ 'chip-in' if entry.sign == 'in' else 'chip-out' }}">
+                {{ '+' if entry.sign == 'in' else '−' }}{{ entry.qty }} {{ 'в' if entry.sign == 'in' else 'из' }} {{ entry.place }}
+              </span>
+            {% else %}
+              <span class="muted">без движения остатков</span>
+            {% endfor %}
+          </td>
+          <td class="muted">{{ op.note or '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">История пуста</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

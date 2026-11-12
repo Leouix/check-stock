@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Склады · CheckStock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Склады и движения</h1>
+    <p class="muted">Удаление склада мягкое: остатки не исчезают, а переезжают в архив вместе с историей.</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Склады фулфилмента</h2></div>
+  <div class="table-wrap">
+    <table class="simple warehouses">
+      <thead><tr><th>Склад</th><th class="num">Физически</th><th class="num">Резерв FBS</th><th class="num">Доступно</th><th>Что лежит</th><th class="actions-col">Действия</th></tr></thead>
+      <tbody>
+      {% for ff in warehouses %}
+        <tr>
+          <td><strong>{{ ff.name }}</strong></td>
+          <td class="num">{{ ff.physical }}</td>
+          <td class="num {{ 'warn' if ff.reserved }}">{{ ff.reserved or '—' }}</td>
+          <td class="num strong">{{ ff.available }}</td>
+          <td class="positions">
+            {% for position in ff.positions %}
+              <span class="chip">{{ position.sku }} · {{ position.physical }} шт{% if position.reserved %} <em>({{ position.reserved }} в резерве)</em>{% endif %}</span>
+            {% else %}
+              <span class="muted">пусто</span>
+            {% endfor %}
+          </td>
+          <td class="actions">
+            <form method="post" action="/warehouses/{{ ff.id }}/rename" class="inline-form">
+              <input type="text" name="name" value="{{ ff.name }}" maxlength="100" aria-label="Новое название">
+              <button class="small ghost">Переименовать</button>
+            </form>
+            <form method="post" action="/warehouses/{{ ff.id }}/delete" onsubmit="return confirm('Удалить склад «{{ ff.name }}»? Остатки ({{ ff.physical }} шт) перейдут в архив, история сохранится.');">
+              <button class="small danger">Удалить</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Складов нет — добавьте первый</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="split split-2">
+  <div class="card">
+    <div class="card-head"><h2>Новый склад</h2></div>
+    <form method="post" action="/warehouses" class="form-row">
+      <label class="grow">Название <input type="text" name="name" maxlength="100" placeholder="например, Запад" required></label>
+      <button type="submit">Добавить</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Перемещение между ФФ</h2><span class="muted">товар уходит в пути до приёмки</span></div>
+    <form method="post" action="/transfers" class="form-stack">
+      <input type="hidden" name="idem" value="{{ transfer_idem }}">
+      <label>Артикул
+        <select name="sku_id" required>
+          {% for product in products %}<option value="{{ product.id }}">{{ product.sku }} · {{ product.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="form-row">
+        <label>Откуда
+          <select name="from_ff_id" required>{% for ff in ffs %}<option value="{{ ff.id }}">{{ ff.name }}</option>{% endfor %}</select>
+        </label>
+        <label>Куда
+          <select name="to_ff_id" required>{% for ff in ffs %}<option value="{{ ff.id }}" {% if ff.id == default_to_ff_id %}selected{% endif %}>{{ ff.name }}</option>{% endfor %}</select>
+        </label>
+        <label>Кол-во <input type="number" name="qty" min="1" value="1" required></label>
+      </div>
+      <button type="submit">Отправить перемещение</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Перемещения</h2><span class="muted">приёмка закрывает путь и добавляет товар на склад получателя</span></div>
+  <div class="table-wrap">
+    <table class="simple">
+      <thead><tr><th>№</th><th>Товар</th><th>Маршрут</th><th class="num">Кол-во</th><th>Статус</th><th class="actions-col">Действия</th></tr></thead>
+      <tbody>
+      {% for transfer in transfers %}
+        <tr>
+          <td><strong>{{ transfer.number }}</strong></td>
+          <td>{{ transfer.sku }}</td>
+          <td>{{ transfer.from }} → {{ transfer.to }}</td>
+          <td class="num">{{ transfer.qty }}</td>
+          <td>
+            {% if transfer.status == 'SENT' %}<span class="badge badge-blue">в пути</span>
+            {% else %}<span class="badge badge-green">принято</span>{% endif %}
+          </td>
+          <td class="actions">
+            {% if transfer.status == 'SENT' %}
+              <form method="post" action="/transfers/{{ transfer.id }}/receive"><button class="small">Принять</button></form>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Перемещений пока нет</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

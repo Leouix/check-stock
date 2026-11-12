@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Остатки · CheckStock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Остатки</h1>
+    <p class="muted">Один артикул может лежать на нескольких складах. «Доступно» = физически минус резерв FBS.</p>
+  </div>
+</div>
+
+<section class="kpis">
+  <div class="kpi">
+    <span>Физически на ФФ</span>
+    <strong>{{ totals.physical }} шт</strong>
+  </div>
+  <div class="kpi kpi-accent">
+    <span>Доступно к продаже</span>
+    <strong>{{ totals.available }} шт</strong>
+  </div>
+  <div class="kpi">
+    <span>В резерве FBS</span>
+    <strong>{{ totals.reserved }} шт</strong>
+  </div>
+  <div class="kpi">
+    <span>В пути между ФФ</span>
+    <strong>{{ kind_totals.TRANSIT }} шт</strong>
+  </div>
+  <div class="kpi">
+    <span>На складе маркетплейса</span>
+    <strong>{{ kind_totals.MP }} шт</strong>
+  </div>
+  <div class="kpi">
+    <span>У клиента по FBS</span>
+    <strong>{{ kind_totals.CLIENT }} шт</strong>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Остатки по артикулам и складам</h2>
+    <span class="muted">физ. — физически, рез. — резерв FBS, дост. — доступно</span>
+  </div>
+  <div class="table-wrap">
+    <table class="matrix">
+      <thead>
+      <tr>
+        <th rowspan="2" class="sticky-col">Артикул / товар</th>
+        {% for ff in ffs %}
+          <th colspan="3">{{ ff.name }}</th>
+        {% endfor %}
+        <th colspan="3" class="total-col">Итого по сети</th>
+      </tr>
+      <tr>
+        {% for ff in ffs %}
+          <th class="num">физ.</th><th class="num">рез.</th><th class="num">дост.</th>
+        {% endfor %}
+        <th class="num total-col">физ.</th><th class="num total-col">рез.</th><th class="num total-col">дост.</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="sticky-col">
+            <strong>{{ row.sku }}</strong>
+            <span class="muted">{{ row.name }}</span>
+          </td>
+          {% for ff in ffs %}
+            {% set cell = row.cells[ff.id] %}
+            <td class="num">{{ cell.physical }}</td>
+            <td class="num {{ 'warn' if cell.reserved }}">{{ cell.reserved or '—' }}</td>
+            <td class="num {{ 'zero' if cell.available == 0 else 'strong' }}">{{ cell.available }}</td>
+          {% endfor %}
+          <td class="num total-col">{{ row.physical }}</td>
+          <td class="num total-col">{{ row.reserved or '—' }}</td>
+          <td class="num total-col strong">{{ row.available }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="99" class="empty">Нет товаров. Загрузите тестовые данные: <code>python -m app.seed</code></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if extras.TRANSIT or extras.MP or extras.CLIENT or extras.ARCHIVE %}
+<section class="split">
+  {% if extras.TRANSIT %}
+  <div class="card">
+    <div class="card-head"><h2>В пути</h2><span class="badge badge-blue">{{ kind_totals.TRANSIT }} шт</span></div>
+    <table class="simple">
+      <thead><tr><th>Куда движется</th><th>Товар</th><th class="num">шт</th></tr></thead>
+      <tbody>
+      {% for item in extras.TRANSIT %}
+        <tr><td>{{ item.place }}</td><td><strong>{{ item.sku }}</strong> <span class="muted">{{ item.name }}</span></td><td class="num">{{ item.qty }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if extras.MP %}
+  <div class="card">
+    <div class="card-head"><h2>На складе маркетплейса</h2><span class="badge badge-green">{{ kind_totals.MP }} шт</span></div>
+    <table class="simple">
+      <thead><tr><th>Склад</th><th>Товар</th><th class="num">шт</th></tr></thead>
+      <tbody>
+      {% for item in extras.MP %}
+        <tr><td>{{ item.place }}</td><td><strong>{{ item.sku }}</strong> <span class="muted">{{ item.name }}</span></td><td class="num">{{ item.qty }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if extras.CLIENT %}
+  <div class="card">
+    <div class="card-head"><h2>У клиента</h2><span class="badge badge-violet">{{ kind_totals.CLIENT }} шт</span></div>
+    <table class="simple">
+      <thead><tr><th>Отправка</th><th>Товар</th><th class="num">шт</th></tr></thead>
+      <tbody>
+      {% for item in extras.CLIENT %}
+        <tr><td>{{ item.place }}</td><td><strong>{{ item.sku }}</strong> <span class="muted">{{ item.name }}</span></td><td class="num">{{ item.qty }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if extras.ARCHIVE %}
+  <div class="card">
+    <div class="card-head"><h2>Архив удалённых складов</h2><span class="badge badge-grey">{{ kind_totals.ARCHIVE }} шт</span></div>
+    <table class="simple">
+      <thead><tr><th>Место</th><th>Товар</th><th class="num">шт</th></tr></thead>
+      <tbody>
+      {% for item in extras.ARCHIVE %}
+        <tr><td>{{ item.place }}</td><td><strong>{{ item.sku }}</strong> <span class="muted">{{ item.name }}</span></td><td class="num">{{ item.qty }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-head">
+    <h2>Новый приход</h2>
+    <span class="muted">Увеличивает физический остаток на выбранном складе</span>
+  </div>
+  <form method="post" action="/receipts" class="form-row">
+    <input type="hidden" name="idem" value="{{ idem }}">
+    <label>Артикул
+      <select name="sku_id" required>
+        {% for product in products %}
+          <option value="{{ product.id }}">{{ product.sku }} · {{ product.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Склад
+      <select name="ff_id" required>
+        {% for ff in ffs %}<option value="{{ ff.id }}">{{ ff.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Количество
+      <input type="number" name="qty" min="1" value="1" required>
+    </label>
+    <label class="grow">Комментарий
+      <input type="text" name="note" maxlength="200" placeholder="например, поставка №14">
+    </label>
+    <button type="submit">Оприходовать</button>
+  </form>
+</section>
+{% endblock %}
