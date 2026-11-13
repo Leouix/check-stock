@@ -6,7 +6,12 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-dev.txt .
+# Демо-стенд прогоняет scripts/verify_flow.py внутри контейнера, ему нужен httpx.
+# Обычная сборка (docker-compose.yml) dev-зависимости не ставит.
+ARG INSTALL_DEV=false
+RUN pip install --no-cache-dir -r requirements.txt \
+    && if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir -r requirements-dev.txt; fi
 
 COPY app ./app
 COPY scripts ./scripts
