@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from . import services
+from .config import READ_ONLY_BANNER, read_only_enabled
 from .db import get_session
 from .models import Location, LocationKind, Product
 from .queries import history_view, orders_view, stock_overview, warehouses_view
@@ -23,6 +24,10 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.filters["dt"] = lambda value: value.astimezone(
     ZoneInfo("Asia/Yerevan")
 ).strftime("%d.%m.%Y %H:%M")
+# Флаг читается на каждый рендер: в демо-режиме шаблоны показывают плашку
+# и гасят кнопки записи, в остальных запусках ничего не меняется.
+templates.env.globals["read_only"] = read_only_enabled
+templates.env.globals["read_only_banner"] = READ_ONLY_BANNER
 
 
 def _redirect(path: str, message: str | None = None, level: str = "ok"):

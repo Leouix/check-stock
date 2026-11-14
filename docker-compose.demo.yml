@@ -38,6 +38,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      # Демо открыто без пароля: запись выключена на уровне приложения.
+      DEMO_READ_ONLY: ${DEMO_READ_ONLY:-1}
     # 8000 на сервере занят waBot, поэтому демо слушает 8010 строго на localhost.
     ports:
       - "127.0.0.1:8010:8000"

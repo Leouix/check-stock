@@ -6,7 +6,7 @@
   <title>{% block title %}CheckStock{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="{{ 'is-readonly' if read_only() }}">
 <header class="topbar">
   <a class="brand" href="/">
     <span class="brand-mark">CS</span>
@@ -24,9 +24,15 @@
 </header>
 
 <main>
+  {% if read_only() %}
+    <div class="readonly-banner" role="status">
+      <strong>Демо-режим.</strong> {{ read_only_banner }}
+    </div>
+  {% endif %}
+
   {% set msg = request.query_params.get('msg') %}
   {% if msg %}
-    <div class="flash {{ 'flash-error' if request.query_params.get('level') == 'error' else 'flash-ok' }}">
+    <div class="flash {{ 'flash-error' if request.query_params.get('level') == 'error' else ('flash-info' if request.query_params.get('level') == 'info' else 'flash-ok') }}">
       {{ msg }}
     </div>
   {% endif %}
